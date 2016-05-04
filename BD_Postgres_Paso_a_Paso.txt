@@ -1,0 +1,368 @@
+﻿PRACTICA
+ADMINSTRACIÓN DE BASE DE DATOS CON POSGRESQL.
+
+GITHUB
+
+Usuario: sofasp
+Repositorio: https://github.com/sofasp/uasb_DBA
+
+POSTGRESQL
+
+1. Crear un usuario "admin_user" que será el administrador de nuestra base datos:
+
+postgres=# CREATE USER admin_user PASSWORD 'Andina';
+
+2. Otorgarle al usuario "admin_user" los permisos para crear una base de datos y crear usuarios:
+
+postgres=# ALTER ROLE admin_user WITH CREATEDB CREATEUSER;
+
+3. Crear la base de datos "musicdb" cuyo propietario es el usuario "admin_user", considerar el tipo de codificación de la base de datos:
+
+postgres=# CREATE DATABASE musicdb OWNER admin_user ENCODING 'latin1';
+
+Igresando con Adminuser:
+
+postgres@ubuntu:~$ psql -U admin_user musicdb
+musicdb=#
+
+4. Crear tres usuarios:
+          Creando equemas:
+
+ 	musicdb=# CREATE SCHEMA MTable;
+	musicdb=# CREATE SCHEMA MVista;
+
+Revocando permisos:
+
+REVOKE CONNECT ON DATABASE musicdb FROM PUBLIC;
+
+uasb_user usuario que realiza solo consultas a los datos:
+
+CREATE USER uasb_user PASSWORD 'Andina';
+REVOKE ALL PRIVILEGES ON DATABASE musicdb FROM uasb_user;
+musicdb=# GRANT SELECT ON ALL TABLES IN SCHEMA MTables,MVistas TO uasb_user;
+
+operator_user usuario que realiza operaciones sobre las tablas:
+
+CREATE USER operator_user PASSWORD 'Andina';
+REVOKE ALL PRIVILEGES ON DATABASE musicdb FROM operator_user;
+musicdb=# GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA MTables,MVistas TO operator_user;
+
+
+test_user usuario que realiza solo consultas a vistas de la base de datos:
+
+CREATE USER test_user PASSWORD 'Andina';
+REVOKE ALL PRIVILEGES ON DATABASE musicdb FROM test_user;
+musicdb=# GRANT SELECT ON ALL TABLES IN SCHEMA MVistas TO test_user; 
+
+5. Asignar los permisos para que los usuarios creados sólo tengan acceso a la base de datos "musicdb":
+
+Pregunta resuelta anteriormente. 
+
+6. Crear las tablas de acuerdo al MER proporcionado. Emplear la consola "psql" para realizar este trabajo.
+
+
+CREATE TABLE MTable.Artist (
+	ArtistId	int NOT NULL,
+	Name		varchar(100),		
+    	PRIMARY KEY(ArtistId)
+);
+
+CREATE TABLE MTable.Album (
+	AlbumId		int NOT NULL,
+	Tittle		varchar(100),
+	ArtistId	int NOT NULL,
+	PRIMARY KEY(AlbumId),
+	FOREIGN KEY (ArtistId) 
+REFERENCES MTable.Artist(ArtistId)
+);
+
+CREATE TABLE MTable.Playlist (
+	PlaylistId int NOT NULL,
+	Name	varchar(200),
+    	PRIMARY KEY(PlaylistId)
+);
+
+CREATE TABLE MTable.MediaType (
+	MediaTypeId	int NOT NULL,
+	Name		varchar(100),
+    	PRIMARY KEY(MediaTypeId)
+);
+
+CREATE TABLE MTable.Genre(
+	GenreId	int NOT NULL,
+	Name	varchar(100),
+    	PRIMARY KEY(GenreId)
+);
+
+
+CREATE TABLE MTable.Track (
+    TrackId	int NOT NULL,
+    Name        varchar(200),
+    AlbumId     int NOT NULL,
+    MediaTypeId int NOT NULL,
+    GenreID    int NOT NULL,   
+    Composer 	varchar(200),
+    Milliseconds	int,
+    Bytes	int,    
+    UnitPrice	real,
+    PRIMARY KEY(TrackId),
+    FOREIGN KEY (AlbumId) 
+REFERENCES MTable.Album(AlbumId),
+    FOREIGN KEY (MediaTypeId) 
+REFERENCES MTable.MediaType(MediaTypeId),
+    FOREIGN KEY (GenreID) 
+REFERENCES MTable.Genre(GenreID)
+);
+
+CREATE TABLE MTable.PlaylistTrack (
+	PlaylistId	int NOT NULL,
+	TrackId		int NOT NULL,
+        PRIMARY KEY(PlaylistId,TrackId),
+	FOREIGN KEY (PlaylistId) 
+REFERENCES MTable.Playlist(PlaylistId),
+   	FOREIGN KEY (TrackId) 
+REFERENCES MTable.Track(TrackId)
+);
+
+CREATE TABLE MTable.Employee (
+	EmployeId	int NOT NULL,
+	LastName	varchar(100),
+	FirtName	varchar(100),
+	Title		varchar(100),
+	ReportsTo	int,
+	BirthDate	date,
+	HireDate	date,
+	Adress		varchar(100),
+	City		varchar(50),
+	Sate		varchar(50),
+	Country		varchar(50),
+	PostalCode	varchar(50),
+	Phone		varchar(50),
+	Fax		varchar(50),
+	Email		varchar(100),
+	PRIMARY KEY(EmployeId),
+	FOREIGN KEY (ReportsTo) 
+REFERENCES MTable.Employee(EmployeId)	
+);
+
+CREATE TABLE MTable.Customer (
+	CustomerId	int NOT NULL,
+	FirtName	varchar(100),
+	LastName	varchar(100),
+	Company		varchar(100),
+	Address		varchar(100),
+	City		varchar(50),
+	Sate		varchar(50),
+	Country		varchar(50),
+	PostalCode	varchar(50),
+	Phone		varchar(50),
+	Fax		varchar(50),
+	Email		varchar(100),
+	SupportRepId	int,
+   	PRIMARY KEY(CustomerId),
+	FOREIGN KEY (SupportRepId) 
+REFERENCES MTable.Employee(EmployeId)
+);
+
+CREATE TABLE MTable.Invoice (
+	InvoiceId	int NOT NULL,
+	CustomerId	int NOT NULL,
+	InvoiceDate	date,
+	BillingAddress	varchar(100),
+	BillingCity	varchar(50),
+	BillingState	varchar(50),	
+	BillingCountry	varchar(50),
+	BillingPostalCode	varchar(50),
+	Total		real,	
+   	PRIMARY KEY(InvoiceId),
+	FOREIGN KEY (CustomerId) 
+REFERENCES MTable.Customer(CustomerId)
+);
+
+CREATE TABLE MTable.InvoiceLine (
+	InvoiceLineId 	int NOT NULL,
+	InvoiceId	int NOT NULL,
+	TrackId		int NOT NULL,
+	UnitPrice	real,
+	Quantity	int,		    
+	PRIMARY KEY(InvoiceLineId),
+	FOREIGN KEY (InvoiceId) 
+REFERENCES MTable.Invoice(InvoiceId),
+	FOREIGN KEY (TrackId) 
+REFERENCES MTable.Track(TrackId)
+);
+
+Borrar las tablas:
+
+DROP TABLE MTable.InvoiceLine;
+DROP TABLE MTable.Invoice;
+DROP TABLE MTable.Customer;
+DROP TABLE MTable.Employee;
+DROP TABLE MTable.PlaylistTrack;
+DROP TABLE MTable.Track;
+DROP TABLE MTable.Genre;
+DROP TABLE MTable.MediaType;
+DROP TABLE MTable.Playlist;
+DROP TABLE MTable.Album;
+DROP TABLE MTable.Artist;
+
+CONSTRUYENDO LA BASE DE DATOS Y CARGANDO DATOS
+
+1. Importar los datos a cada tabla de acuerdo a los datos contenidos en la carpeta "RAW CSV" del repositorio de Github. Utilizar la herramienta de "COPY" en Postgres:
+
+musicdb=# COPY MTable.Artist from '/home/juanmo/uasd_BD/uasb_DBA/RAW_CSV/artist_                                                                                                 data.csv' with delimiter ';' csv header quote '"';
+COPY 244
+musicdb=# COPY MTable.Album from '/home/juanmo/uasd_BD/uasb_DBA/RAW_CSV/album_da                                                                                                 ta.csv' with delimiter ';' csv header quote '"';
+COPY 306
+musicdb=# COPY MTable.Playlist from '/home/juanmo/uasd_BD/uasb_DBA/RAW_CSV/playl                                                                                                 ist_data.csv' with delimiter ';' csv header quote '"';
+COPY 17
+musicdb=# COPY MTable.MediaType from '/home/juanmo/uasd_BD/uasb_DBA/RAW_CSV/medi                                                                                                 atype_data.csv' with delimiter ';' csv header quote '"';
+COPY 5
+musicdb=# COPY MTable.Genre from '/home/juanmo/uasd_BD/uasb_DBA/RAW_CSV/genre_da                                                                                                 ta.csv' with delimiter ';' csv header quote '"';
+COPY 25
+musicdb=# COPY MTable.Track from '/home/juanmo/uasd_BD/uasb_DBA/RAW_CSV/track_da                                                                                                 ta.csv' with delimiter ';' csv header quote '"';
+COPY 2883
+musicdb=# COPY MTable.PlaylistTrack from '/home/juanmo/uasd_BD/uasb_DBA/RAW_CSV/                                                                                                 playlisttrack_data.csv' with delimiter ';' csv header quote '"';
+COPY 5941
+musicdb=# COPY MTable.Employee from '/home/juanmo/uasd_BD/uasb_DBA/RAW_CSV/emplo                                                                                                 yee_data.csv' with delimiter ';' csv header quote '"';
+COPY 8
+musicdb=# COPY MTable.Customer from '/home/juanmo/uasd_BD/uasb_DBA/RAW_CSV/custo                                                                                                 mer_data.csv' with delimiter ';' csv header quote '"';
+COPY 36
+musicdb=# COPY MTable.Invoice from '/home/juanmo/uasd_BD/uasb_DBA/RAW_CSV/invoic                                                                                                 e_data.csv' with delimiter ';' csv header quote '"';
+COPY 251
+musicdb=# COPY MTable.InvoiceLine from '/home/juanmo/uasd_BD/uasb_DBA/RAW_CSV/in                                                                                                 voiceline_data.csv' with delimiter ';' csv header quote '"';
+COPY 1107
+
+
+2. Crear las siguientes vistas usando lenguaje SQL:
+
+Listar el top 5 de las canciones más vendidas por genero:
+
+musicdb=# CREATE VIEW MVista.Top5MasVendidas AS SELECT GG.Name as Genero, TT.Name as Cancion, Cant.Cantidad FROM MTable.Track TT, MTable.Genre GG, (SELECT TrackId, count(TrackId) Conteo, sum(Quantity) Cantidad FROM Mtable.InvoiceLine GROUP BY TrackId ORDER BY Cantidad DESC) AS Cant WHERE TT.TrackId in (SELECT T.TrackId FROM (SELECT I.TrackId, count(I.TrackId) Conteo1, sum(I.Quantity) Cantidad1 FROM Mtable.InvoiceLine I group by I.TrackId) as IL, MTable.Track T WHERE T.TrackId=IL.TrackId and T.GenreId=GG.GenreId ORDER BY IL.Cantidad1 DESC limit 5) and TT.GenreId=GG.GenreId AND Cant.TrackId=TT.TrackId ORDER BY GG.Name, Cant.Cantidad DESC;
+CREATE VIEW
+
+musicdb=# SELECT * FROM Mvista.Top5MasVendidas;
+
+   genero       |                               cancion                                | cantidad
+--------------------+----------------------------------------------------------------------+----------
+ Alternative        | Four Walled World                                                    |        1
+...
+
+Listar los 3 clientes que han comprado más canciones:
+
+musicdb=# CREATE VIEW MVista.Top3Clientes AS SELECT C.FirtName, C.LastName, count(IL.InvoiceId) as Canciones, sum(IL.Quantity) as Cantidad FROM MTable.Customer C, Mtable.Invoice I, Mtable.InvoiceLine IL WHERE C.CustomerId=I.CustomerId and I.InvoiceId=IL.InvoiceId GROUP BY C.FirtName, C.LastName, IL.InvoiceId ORDER BY Cantidad DESC limit 3;
+CREATE VIEW
+
+Listar las 20 canciones que tienen mayor duración agrupados por tipo de medio:
+
+musicdb=# CREATE VIEW MVista.Top20EnDuracion AS SELECT TT.TrackId, TT.Name as Cancion, TT.Milliseconds, MMT.Name as Tipo_Medio FROM MTable.MediaType as MMT, Mtable.Track as TT WHERE TT.TrackId in ( SELECT TrackId FROM ( SELECT T.TrackId, T.Name, T.Milliseconds, MT.Name FROM MTable.Track as T, MTable.Mediatype as MT WHERE T.MediaTypeId=MT.MediaTypeId and MT.MediaTypeId=MMT.MediaTypeId ORDER BY MT.Name, T.Milliseconds DESC limit 20) as TRMT) and TT.MediaTypeId=MMT.MediaTypeId ORDER BY MMT.Name, TT.Milliseconds DESC;
+
+
+Listar total ventas por mes agrupadas por el vendedor:
+
+musicdb=# CREATE VIEW MVista.VentasMensuales AS SELECT E.LastName, E.FirtName, date_part('year',I.InvoiceDate) as  Año, to_char(I.invoiceDate,'MM') as mes, sum(I.Total) FROM MTable.Employee as E, MTable.customer as C cross join MTable.Invoice as I WHERE E.EmployeId=C.SupportRepId and C.CustomerId=I.CustomerId GROUP BY E.LastName, E.FirtName, año,  mes ORDER BY E.LastName, E.FirtName, año, mes;
+
+Asignar los permisos necesarios a cada usuario de acuerdo a la descripción en el punto 4.:
+
+Se generaron esquemas, los permisos estan descritos en el punto 4.
+
+MANTENIMIENTO
+
+1. Crear dos backups de la base de datos
+
+En formato plano con nombre de archivo "bk_musicdb_usergithub"
+
+pg_dump -U admin_user -W musicdb > /home/juanmo/uasd_BD/uasb_DBA/MyBackUP/bk_musicdb_sofasp.sql
+
+En formato Postgresl con el nombre de archivo "bk_musicdb_usergithub"
+
+pg_dump -U admin_user -Fc -v -W musicdb > /home/juanmo/uasd_BD/uasb_DBA/MyBackUP/bk_musicdb_sofasp.dump
+
+2. Subir ambos archivos backup a su cuenta Github
+
+OK
+
+3. Realizar backups con la opción -a y -v, explicar la diferencia.
+
+pg_dump -U admin_user -Fc -av -W musicdb > /home/juanmo/uasd_BD/uasb_DBA/MyBackUP/bk_musicdb_only_data_sofasp.dump
+
+La opcion -a espacifica sacar unicamente los datos como BackUp.
+La opcion -v muestra en pantalla el detalle del backup.
+
+4. Obtener un repositorio de un compañero y realizar un fork
+
+Obteniedo repositorio de:  https://github.com/markito0/uasb_DBA
+git clone https://github.com/markito0/uasb_DBA
+
+
+
+
+
+
+5. Crear una nueva base de datos con el nombre "musicdb_test" y recuperar todos los datos con los backups obtenidos del repositorio de su compañero.
+
+Creando Base de Datos:
+createdb -e -O admin_user musicdb_test
+
+Restaurando Base de Datos:
+
+psql -U admin_user musicdb_test < bk_musicdb_usergithub.sql > pg_musicdb_test.log 2>&1
+
+Nos conectamos a la BD:
+
+postgres@ubuntu:/home/juanmo/uasd_BD/forkMarco/uasb_DBA$ psql -U admin_user musicdb_test
+Password for user admin_user:
+psql (9.3.12)
+Type "help" for help.
+
+musicdb_test=# \d
+                       List of relations
+ Schema |              Name               | Type  |   Owner
+--------+---------------------------------+-------+------------
+ public | album                           | table | admin_user
+ public | artist                          | table | admin_user
+ public | customer                        | table | admin_user
+ public | employee                        | table | admin_user
+ public | genre                           | table | admin_user
+ public | invoice                         | table | admin_user
+ public | invoiceline                     | table | admin_user
+ public | mediatype                       | table | admin_user
+ public | playlist                        | table | admin_user
+ public | playlisttrack                   | table | admin_user
+ public | track                           | table | admin_user
+ public | vista_cancion_mayor_duracion    | view  | admin_user
+ public | vista_canciones_mas_compradas   | view  | admin_user
+ public | vista_canciones_mas_vendidas    | view  | admin_user
+ public | vista_total_ventas_mes_vendedor | view  | admin_user
+(15 rows)
+
+6. Proceder con el commando "vacummdb" para la limpieza la base de datos y toda la información generada guardarla en un archivo con nombre "vacumm_music.txt".
+
+vacuumdb -fzv musicdb
+
+7. Proceder con el commando "reindexdb" para la reindexación de la base de datos y toda la información generada guardarla en un archivo con el nombre "reindex_music.txt":
+
+ reindexdb -e musicdb
+
+8. Crear un script para generar un backup de la base de datos, el script deberá construir el archivo con el nombre del "archivo + un formato de fecha y hora".
+
+#!/bin/bash
+# Script para generar BackUps automaticamente.
+TIME=$(date +%d-%m-%Y_%T)
+pg_dump -U admin_user musicdb > "/home/juanmo/uasd_BD/uasb_DBA/MyBackUP/bk_musicdb_sofasp_$TIME.sql"
+
+
+9. Utilizar las herramientas .pgpass/cron para construir backups automatizados (TAREA)
+
+.pgpass, se utiliza para declarar el usuario y password quien sera e encargado de realizar tareas de administracion como sacar BackUp.
+
+Por ejemplo para el caso de admin_user:
+
+echo "localhost:5432:musicdb:admin_user:xxx $HOME/.pgpass
+chmod 600 $HOME/.pgpass
+
+En /etc/crontab se programan las tareas automaticas, por ejemplo para mi caso, programamos los backups a las 23:59 cada dia:
+
+sudo crontab -e 59 23 * * * postgres /home/juanmo/uasd_BD/uasb_DBA/MyBackUP/script_backup.sh
+
+
